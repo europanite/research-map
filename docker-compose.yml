@@ -1,0 +1,47 @@
+name: research-map
+services:
+  # Default: frontend only, no server-side OpenAlex requests and no DB.
+  frontend:
+    build: ./frontend
+    ports:
+      - "127.0.0.1:5173:5173"
+    volumes:
+      - ./frontend/src:/app/src
+      - ./frontend/index.html:/app/index.html:ro
+    stdin_open: true
+  db:
+    profiles: [premium]
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-map}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-local_development_only}
+      POSTGRES_DB: ${POSTGRES_DB:-research_map}
+    volumes:
+      - map_postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-map} -d ${POSTGRES_DB:-research_map}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+  backend:
+    profiles: [premium]
+    build: ./backend
+    environment:
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-map}:${POSTGRES_PASSWORD:-local_development_only}@db:5432/${POSTGRES_DB:-research_map}
+      OPENALEX_API_KEY: ${OPENALEX_API_KEY:-}
+      OPENALEX_EMAIL: ${OPENALEX_EMAIL:-}
+      CACHE_TTL_HOURS: ${CACHE_TTL_HOURS:-24}
+      GUEST_DAILY_SEARCH_LIMIT: ${GUEST_DAILY_SEARCH_LIMIT:-20}
+      USAGE_HASH_SALT: ${USAGE_HASH_SALT:-}
+      EMBEDDING_PROVIDER: ${EMBEDDING_PROVIDER:-tfidf}
+      OLLAMA_URL: ${OLLAMA_URL:-http://host.docker.internal:11434}
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-nomic-embed-text}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:8000:8000"
+volumes:
+  map_postgres:
