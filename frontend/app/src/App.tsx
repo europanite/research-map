@@ -146,7 +146,11 @@ export default function App() {
 
   return <div className="app-shell">
     <header className="topbar">
-      <div className="brand"><div className="brand-icon"><Atom size={22} strokeWidth={1.9} /></div><span>RESEARCH <b>map</b></span></div>
+      <a className="brand" href="https://github.com/europanite/research-map" target="_blank" rel="noopener noreferrer" title="View source on GitHub" aria-label="Research Map — GitHub repository (opens in a new tab)" style={{ color: 'inherit', textDecoration: 'none', cursor: 'pointer' }}>
+        <div className="brand-icon"><Atom size={22} strokeWidth={1.9} /></div>
+        <span>RESEARCH <b>map</b></span>
+        <ExternalLink size={12} aria-hidden="true" />
+      </a>
       <a className="topbar-link" href="https://docs.openalex.org/" target="_blank" rel="noreferrer">OpenAlex <ExternalLink size={13}/></a>
       <button type="button" className="icon-btn mobile-only topbar-search" aria-label="Open search panel" aria-expanded={sidebarOpen} onClick={() => setSidebarOpen(true)}><SlidersHorizontal size={20}/></button>
     </header>
