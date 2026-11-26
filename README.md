@@ -1,5 +1,7 @@
 # Research Map
 
+**[Launch Research Map](https://europanite.github.io/research-map/)**
+
 Search a scientific topic in **OpenAlex**, combine **title/abstract similarity, coauthors, and citation structure**, and explore the result as an interactive **3D map**. 
 ## Start locally
 
