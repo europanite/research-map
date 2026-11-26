@@ -1,14 +1,16 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ArrowDownRight, ArrowUpRight, Atom, ChevronDown,
-  Compass, ExternalLink, Filter, GitBranch, LoaderCircle,
+  Compass, ExternalLink, GitBranch, LoaderCircle,
   RotateCcw, Search, SlidersHorizontal, X, FileDown, FileUp, KeyRound,
 } from 'lucide-react';
-import MapScene, { CLUSTER_COLORS } from './MapScene';
+import { CLUSTER_COLORS } from './lib/cluster-colors';
 import { buildRegionLabels, regionCaption } from './lib/region-labels';
 import type { PaperLabelMode } from './lib/region-labels';
 import { createMap, exportMap, importMap, loadMap, reweightMap } from './api';
 import type { MapData, Weights } from './types';
+
+const MapScene = lazy(() => import('./MapScene'));
 
 const DEFAULT_WEIGHTS: Weights = { abstract: 0.65, authors: 0.15, citations: 0.20 };
 const shortTitle = (s: string, n = 58) => s.length > n ? `${s.slice(0, n).trimEnd()}…` : s;
@@ -200,7 +202,9 @@ export default function App() {
           {map.metrics.stale_provider_fallback && <div className="cache-notice" role="status">OpenAlex unavailable — using cached papers.</div>}
           <div className="visual-body">
             <div className="map-area">
-              <MapScene data={map} selectedId={selectedId} onSelect={choose} showCitations={showCitations} showSimilarities={showSimilarities} paperLabels={paperLabels} showRegionLabels={showRegionLabels} showClouds={showClouds} cloudOpacity={cloudOpacity} pointScale={pointScale} visibleCluster={visibleCluster}/>
+              <Suspense fallback={<div role="status" style={{ display: 'grid', placeItems: 'center', height: '100%' }}>Loading 3D map…</div>}>
+                <MapScene data={map} selectedId={selectedId} onSelect={choose} showCitations={showCitations} showSimilarities={showSimilarities} paperLabels={paperLabels} showRegionLabels={showRegionLabels} showClouds={showClouds} cloudOpacity={cloudOpacity} pointScale={pointScale} visibleCluster={visibleCluster}/>
+              </Suspense>
               <div className="map-overlay-bottom region-caption-overlay" aria-label="Filter regions">
                 <div className="cluster-legend caption-legend">
                   <button type="button" aria-pressed={visibleCluster === null} className={visibleCluster === null ? 'cluster-option region-all on' : 'cluster-option region-all'} onClick={() => setVisibleCluster(null)}>All</button>
