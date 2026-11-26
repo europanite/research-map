@@ -146,10 +146,9 @@ export default function App() {
 
   return <div className="app-shell">
     <header className="topbar">
-      <a className="brand" href="https://github.com/europanite/research-map" target="_blank" rel="noopener noreferrer" title="View source on GitHub" aria-label="Research Map — GitHub repository (opens in a new tab)" style={{ color: 'inherit', textDecoration: 'none', cursor: 'pointer' }}>
+      <a className="brand" href="https://github.com/europanite/research-map" target="_blank" rel="noopener noreferrer" title="View source on GitHub" aria-label="Research MAP — GitHub repository (opens in a new tab)" style={{ color: 'inherit', textDecoration: 'none', cursor: 'pointer' }}>
         <div className="brand-icon"><Atom size={22} strokeWidth={1.9} /></div>
-        <span>RESEARCH <b>map</b></span>
-        <ExternalLink size={12} aria-hidden="true" />
+        <span>RESEARCH MAP</span>
       </a>
       <a className="topbar-link" href="https://docs.openalex.org/" target="_blank" rel="noreferrer">OpenAlex <ExternalLink size={13}/></a>
       <button type="button" className="icon-btn mobile-only topbar-search" aria-label="Open search panel" aria-expanded={sidebarOpen} onClick={() => setSidebarOpen(true)}><SlidersHorizontal size={20}/></button>
@@ -159,10 +158,8 @@ export default function App() {
         <div className="sidebar-scroll">
           <div className="panel-head"><div><h2>Search</h2></div><button className="icon-btn mobile-only" onClick={() => setSidebarOpen(false)} aria-label="Close search panel"><X size={19}/></button></div>
           <form onSubmit={search}>
-            <label className="field-label" htmlFor="topic">Research topic</label>
-            <div className="search-area"><Search size={17}/><textarea id="topic" rows={2} value={query} maxLength={200} onChange={e => setQuery(e.target.value)} placeholder="Explore a research area..." /></div>
+            <div className="search-area"><Search size={17}/><textarea id="topic" rows={2} value={query} maxLength={200} onChange={e => setQuery(e.target.value)} placeholder="" /></div>
             <div className="sidebar-divider"/>
-            <div className="section-heading"><Filter size={15}/><span>Search parameters</span></div>
             <div className="field-row"><Field label="From year" value={yearFrom} onChange={setYearFrom} placeholder="Any" /><Field label="To year" value={yearTo} onChange={setYearTo} placeholder="Any" /></div>
             <label className="field-label space-above" htmlFor="limit">Papers</label>
             <div className="select-wrap"><select id="limit" value={limit} onChange={e => setLimit(Number(e.target.value))}><option value={20}>20</option><option value={40}>40</option><option value={60}>60</option><option value={100}>100</option><option value={120}>120</option></select><ChevronDown size={15}/></div>
@@ -173,7 +170,6 @@ export default function App() {
               <p className="subtle small">Sent only to OpenAlex; not saved. <a href="https://openalex.org/" target="_blank" rel="noreferrer">Get a key</a>.</p>
             </details>
             <div className="sidebar-divider"/>
-            <div className="section-heading"><SlidersHorizontal size={15}/><span>Weights</span></div>
             <WeightControl label="Abstract + Title" description="Text similarity" color="#ac91ff" value={weights.abstract} onChange={v => setWeights(w => ({...w, abstract: v}))} disabled={map?.metrics.available_signals.abstract === false} />
             <WeightControl label="Authors" description="Shared authors" color="#5de0c7" value={weights.authors} onChange={v => setWeights(w => ({...w, authors: v}))} disabled={map?.metrics.available_signals.authors === false} />
             <WeightControl label="Citation network" description="Shared references and direct citations" color="#f7af6e" value={weights.citations} onChange={v => setWeights(w => ({...w, citations: v}))} disabled={map?.metrics.available_signals.citations === false} />
