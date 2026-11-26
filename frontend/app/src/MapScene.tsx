@@ -4,7 +4,7 @@ import Plotly from 'plotly.js-dist-min';
 const Plot = createPlotlyComponent(Plotly);
 import type { Data, Layout } from 'plotly.js-dist-min';
 import type { MapData } from './types';
-import { buildRegionLabels, choosePaperLabelIds, regionCaption } from './lib/region-labels';
+import { buildRegionLabels, choosePaperLabelIds } from './lib/region-labels';
 import { buildRegionClouds } from './lib/clouds';
 import { buildRegionCallouts } from './lib/region-callouts';
 import type { PaperLabelMode } from './lib/region-labels';
@@ -146,10 +146,10 @@ export default function MapScene({ data, selectedId, onSelect, showCitations, sh
         const color = CLUSTER_COLORS[((c.cluster % CLUSTER_COLORS.length) + CLUSTER_COLORS.length) % CLUSTER_COLORS.length];
         return {
           x: c.label[0], y: c.label[1], z: c.label[2],
-          text: r ? regionCaption(r) : `Group ${c.cluster + 1}`,
+          text: r?.keywords[0] || `Region ${c.cluster + 1}`,
           showarrow: false, captureevents: false,
-          font: { size: 15, color, family: 'Inter, system-ui, sans-serif' },
-          bgcolor: 'rgba(12,16,30,0.94)', bordercolor: color, borderwidth: 1, borderpad: 5,
+          font: { size: 12, color, family: 'Inter, system-ui, sans-serif' },
+          bgcolor: 'rgba(12,16,30,0.78)', bordercolor: color, borderwidth: 0, borderpad: 3,
         };
       }) : [],
       xaxis: { showbackground: false, showgrid: false, showspikes: false, zeroline: false, showticklabels: false, title: { text: '' } },
@@ -163,10 +163,10 @@ export default function MapScene({ data, selectedId, onSelect, showCitations, sh
   return <Plot
     data={traces} layout={layout} useResizeHandler
     style={{ width: '100%', height: '100%' }}
-    config={{ displaylogo: false, responsive: true, scrollZoom: true,
+    config={{ displaylogo: false, displayModeBar: 'hover', locale: 'en-US', responsive: true, scrollZoom: true,
       modeBarButtonsToRemove: ['toImage', 'lasso2d', 'select2d'] }}
     onClick={event => {
-      const match = event.points.find(p => p.curveNumber === pointTraceIndex);
+      const match = event.points.find((p: { curveNumber: number; pointNumber: number }) => p.curveNumber === pointTraceIndex);
       if (match && visible[match.pointNumber]) onSelect(visible[match.pointNumber].id);
     }}
   />;

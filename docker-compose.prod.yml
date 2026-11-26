@@ -3,7 +3,7 @@ name: research-map
 services:
   frontend:
     build:
-      context: ./frontend
-      dockerfile: Dockerfile.prod
+      context: ./frontend/app
+      dockerfile: ../Dockerfile.prod
     ports:
       - "127.0.0.1:8088:80"

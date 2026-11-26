@@ -49,3 +49,40 @@
 .detail-region-caption { display: flex; align-items: center; gap: 9px; padding: 10px 12px; border: 1px solid #333b58; border-radius: 8px; font-weight: 600; color: #e6e8ff; overflow-wrap: anywhere; }
 .detail-region-caption .cluster-dot { width: 11px; height: 11px; flex-shrink: 0; }
 @media(max-width:900px) { .map-overlay-bottom.region-caption-overlay { left: 10px; right: 10px; bottom: 8px; max-width: calc(100% - 20px); } .region-caption-overlay .cluster-option.region-caption-option { min-width: 130px; max-width: 175px; min-height: 60px; } }
+
+/* Compact English workspace */
+.topbar{height:52px;justify-content:space-between}
+.sidebar-scroll{padding:18px 18px 20px}
+.panel-head{margin-bottom:16px}.panel-head h2{margin:0;font-size:19px}
+.section-heading{margin-bottom:10px}.sidebar-divider{margin:14px 0}
+.weight-row{margin-bottom:10px}
+.main-topline{min-height:0;padding:12px 20px;align-items:center}
+.main-topline h1{font-size:20px;margin:0;min-width:0;overflow-wrap:anywhere}
+.compact-details{margin-top:12px;color:#aeb6d1;font-size:11px}
+.compact-details summary{cursor:pointer;color:#c3c0e6}
+.compact-details[open] summary{margin-bottom:8px}
+.map-info dl{display:grid;grid-template-columns:1fr auto;gap:5px 8px;margin:8px 0}
+.map-info dd{margin:0;text-align:right;color:#e0e3f5}
+.map-info p{margin:8px 0;line-height:1.5}
+.cache-notice{padding:6px 20px;color:#f2c18d;font-size:11px;border-bottom:1px solid #252a42}
+.map-layers{display:block;z-index:2;top:48px;right:12px;min-width:0;padding:8px 10px;max-height:calc(100% - 100px)}
+.map-layers summary{display:flex;align-items:center;gap:6px;cursor:pointer;font-size:11px;color:#d8d4f6;list-style:none}
+.map-layers summary::-webkit-details-marker{display:none}
+.map-layers summary::after{content:'+';margin-left:auto}
+.map-layers[open] summary::after{content:'−'}
+.map-layers[open]{min-width:168px}
+.layer-controls{display:flex;flex-direction:column;gap:9px;padding-top:12px}
+.region-caption-overlay .cluster-legend.caption-legend{gap:5px;padding:2px 2px 4px}
+.region-caption-overlay .cluster-option.region-all{min-width:0;padding:5px 10px}
+.region-caption-overlay .cluster-option.region-caption-option{min-width:0;max-width:none;min-height:0;padding:5px 9px;align-items:center;gap:6px;border-radius:6px;box-shadow:none}
+.region-caption-overlay .region-caption-option .cluster-dot{width:9px;height:9px;margin:0}
+.region-caption-overlay .region-caption-content strong{font-size:11px;font-weight:600}
+.paper-panel-head{padding:14px 18px 10px}.paper-panel-head h3{margin:0}
+.sort-row{justify-content:flex-end;margin:10px 18px 4px}
+@media(max-width:900px){.main-panel{min-height:calc(100vh - 52px)}.main-topline{min-height:0;padding:10px 15px}.map-layers{top:44px;right:8px}.paper-panel-head{padding:12px 15px}}
+
+/* Minimal map workspace: no duplicate title or decorative landing content. */
+.map-empty{flex:1;min-height:0;background:#0b1020}
+.map-info .map-query{overflow-wrap:anywhere;color:#e0e3f5}
+.topbar .topbar-search{display:none;flex-shrink:0}
+@media(max-width:900px){.topbar .topbar-search{display:grid}.topbar{gap:10px}}

@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Research Map — Page not found</title>
+</head>
+<body>
+  <p>Page not found. <a id="home" href="/">Return to Research Map</a>.</p>
+  <script>
+    (function () {
+      var location = window.location;
+      var base = /^\/research-map(?:\/|$)/.test(location.pathname) ? '/research-map/' : '/';
+      var target = new URL(base, location.origin);
+      target.search = location.search;
+      target.hash = location.hash;
+      document.getElementById('home').href = target.href;
+      if (target.href !== location.href) location.replace(target.href);
+    })();
+  </script>
+</body>
+</html>

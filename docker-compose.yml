@@ -2,12 +2,17 @@ name: research-map
 services:
   # Default: frontend only, no server-side OpenAlex requests and no DB.
   frontend:
-    build: ./frontend
+    build:
+      context: ./frontend/app
+      dockerfile: ../Dockerfile
     ports:
       - "127.0.0.1:5173:5173"
     volumes:
-      - ./frontend/src:/app/src
-      - ./frontend/index.html:/app/index.html:ro
+      - ./frontend/app/src:/app/src
+      - ./frontend/app/index.html:/app/index.html:ro
+      - ./frontend/app/public:/app/public:ro
+      - ./frontend/app/vite.config.ts:/app/vite.config.ts:ro
+      - ./frontend/app/tsconfig.json:/app/tsconfig.json:ro
     stdin_open: true
   db:
     profiles: [premium]

@@ -53,7 +53,7 @@ test('direct browser fetch sends no application backend request, handles multi-p
   assert.ok(urls.every(url => url.startsWith('https://api.openalex.org/works?')));
 });
 test('explicit API quota error is surfaced', async () => {
-  await assert.rejects(fetchOpenAlex({ query:'a topic', year_from:null, year_to:null, weights, limit:20 }, '', async () => ({status:429,ok:false})), /利用枠/);
+  await assert.rejects(fetchOpenAlex({ query:'a topic', year_from:null, year_to:null, weights, limit:20 }, '', async () => ({status:429,ok:false})), /quota or rate limit/i);
 });
 test('single-paper map is finite and has no edges', () => {
   const result = buildMap([works[0]], weights);

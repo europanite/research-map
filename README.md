@@ -14,8 +14,8 @@ cd research-map
 Direct Vite development without Docker:
 
 ```bash
-cd frontend
-npm install
+cd frontend/app
+npm ci
 npm run dev
 # http://localhost:5173
 ```
@@ -51,29 +51,31 @@ docker compose up -d --build frontend
 
 ## Tests
 
+The frontend Dockerfiles live in `frontend/`; their build context is `frontend/app/`. Commit `frontend/app/package.json` and `frontend/app/package-lock.json`. If a lockfile has not yet been created, run `npm install --package-lock-only` from `frontend/app/` first.
+
 ```bash
 # Unit tests run offline with Node 22+; no OpenAlex requests:
-cd frontend
+cd frontend/app
 npm run test:unit
 
 # Full frontend build (requires npm dependencies):
-npm install
+npm ci
 npm run build
 
 # Docker: Python API tests + TypeScript offline unit tests + frontend build:
-cd ..
+cd ../..
 ./scripts/test.sh
 ```
 
-`frontend/tests/local-analysis.test.mjs` mocks the OpenAlex response, tests pagination/IDs/abstract reconstruction/quota errors, reference edges, deterministic/reweighted coordinates, and 120-paper finite 3D geometry. The optional backend's pre-existing test suite remains unchanged. GitHub Actions runs both test sets and a frontend build.
+`frontend/app/tests/local-analysis.test.mjs` mocks the OpenAlex response, tests pagination/IDs/abstract reconstruction/quota errors, reference edges, deterministic/reweighted coordinates, and 120-paper finite 3D geometry. The optional backend's pre-existing test suite remains unchanged. GitHub Actions runs both test sets and a frontend build.
 
 ## Static deploy / GitHub Pages
 
-Only publish the contents of `frontend/dist`; no server-side container is needed. For subpath sites like `https://user.github.io/research-map/`, set the Vite base path at build time:
+Only publish the contents of `frontend/app/dist`; no server-side container is needed. For subpath sites like `https://user.github.io/research-map/`, set the Vite base path at build time:
 
 ```bash
-cd frontend
-npm install
+cd frontend/app
+npm ci
 VITE_BASE_PATH=/research-map/ npm run build
 # Publish dist/ via GitHub Pages or another static host.
 ```
@@ -81,5 +83,3 @@ VITE_BASE_PATH=/research-map/ npm run build
 ## Provider quotas and limitations
 
 OpenAlex generally requires a free API key for meaningful repeated queries and may restrict pagination or quota for anonymous traffic. This client requests a maximum **100 results per HTTP page**, and up to two pages for a 120-paper map; API errors (including 401/403, 402/429) appear in the UI. Current API terms, pricing and key requirements can change; see the official [API reference](https://help.openalex.org/api/), [paging](https://help.openalex.org/api/paging/) and [authentication](https://help.openalex.org/api/authentication/) documentation. Heavy production traffic may require a server-controlled API key and the appropriate OpenAlex plan.
-
-

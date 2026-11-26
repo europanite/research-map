@@ -45,8 +45,8 @@ export async function writeLocal(store: Store, key: string, value: unknown): Pro
       const tx = db.transaction(store, 'readwrite');
       tx.objectStore(store).put(value, key);
       tx.oncomplete = () => resolve();
-      tx.onerror = () => reject(new Error('IndexedDBへの保存に失敗しました。容量やブラウザ設定を確認してください。'));
-      tx.onabort = () => reject(new Error('IndexedDBの書き込みが中断されました。'));
+      tx.onerror = () => reject(new Error('Could not save to IndexedDB. Check storage and browser settings.'));
+      tx.onabort = () => reject(new Error('IndexedDB write was aborted.'));
     } catch (error) { reject(error); }
   });
 }

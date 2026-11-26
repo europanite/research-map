@@ -67,7 +67,7 @@ export async function fetchOpenAlex(
   const seen = new Set<string>();
   const pages = Math.ceil(input.limit / Math.min(input.limit, 100));
   for (let page = 1; page <= pages; page++) {
-    onProgress?.(`OpenAlex に直接アクセス中 (${page}/${pages} ページ)`);
+    onProgress?.(`Fetching OpenAlex (${page}/${pages})`);
     let response: Response;
     try {
       response = await fetcher(makeOpenAlexURL(input, apiKey, page), {
@@ -75,19 +75,19 @@ export async function fetchOpenAlex(
         headers: { Accept: 'application/json' },
       });
     } catch {
-      throw new Error('OpenAlex に直接接続できません。ネットワークまたはブラウザのCORS制限を確認してください。');
+      throw new Error('Could not reach OpenAlex. Check your network or browser CORS settings.');
     }
     if (response.status === 401 || response.status === 403) {
-      throw new Error('OpenAlex API に認証が拒否されました。APIキーと複数ページ取得の条件を確認してください。');
+      throw new Error('OpenAlex denied access. Check your API key and pagination permissions.');
     }
     if (response.status === 429 || response.status === 402) {
-      throw new Error('OpenAlex の利用枠・レート制限に達しました。APIキーまたは後日の再試行が必要です。');
+      throw new Error('OpenAlex quota or rate limit reached. Use an API key or retry later.');
     }
-    if (!response.ok) throw new Error(`OpenAlex HTTP ${response.status}。検索条件を確認してください。`);
+    if (!response.ok) throw new Error(`OpenAlex HTTP ${response.status}. Check your search settings.`);
     let payload: unknown;
-    try { payload = await response.json(); } catch { throw new Error('OpenAlex から不正なJSONが返されました。'); }
+    try { payload = await response.json(); } catch { throw new Error('OpenAlex returned invalid JSON.'); }
     if (!payload || typeof payload !== 'object' || !('results' in payload) || !Array.isArray(payload.results)) {
-      throw new Error('OpenAlex の応答形式が変わりました。results がありません。');
+      throw new Error('OpenAlex response is missing results.');
     }
     for (const raw of payload.results as RawWork[]) {
       const paper = parseWork(raw);
@@ -98,6 +98,6 @@ export async function fetchOpenAlex(
     }
     if (result.length >= input.limit || payload.results.length < Math.min(input.limit, 100)) break;
   }
-  if (!result.length) throw new Error('Abstract付き論文が見つかりませんでした。検索語を変更してください。');
+  if (!result.length) throw new Error('No papers with abstracts found. Try another query.');
   return result;
 }
