@@ -1,5 +1,9 @@
 # [Research Map](https://github.com/europanite/research-map "Research Map")
 
+[![docker](https://github.com/europanite/research-map/actions/workflows/docker.yml/badge.svg)](https://github.com/europanite/research-map/actions/workflows/docker.yml)
+[![CI](https://github.com/europanite/research-map/actions/workflows/ci.yml/badge.svg)](https://github.com/europanite/research-map/actions/workflows/ci.yml)
+[![pages](https://github.com/europanite/research-map/actions/workflows/pages.yml/badge.svg)](https://github.com/europanite/research-map/actions/workflows/pages.yml)
+
 Search a scientific topic in **OpenAlex**, combine **title/abstract similarity, coauthors, and citation structure**, and explore the result as an interactive **3D map**. 
 ## Start locally
 

@@ -15,7 +15,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        node: [22, 24]
+        node: [22, 23, 24]
     defaults:
       run:
         working-directory: frontend/app
