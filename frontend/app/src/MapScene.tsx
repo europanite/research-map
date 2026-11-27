@@ -4,7 +4,7 @@ import Plotly from 'plotly.js-dist-min';
 const Plot = createPlotlyComponent(Plotly);
 import type { Data, Layout } from 'plotly.js-dist-min';
 import type { MapData } from './types';
-import { buildRegionLabels, choosePaperLabelIds } from './lib/region-labels';
+import { buildRegionLabels, choosePaperLabelIds, regionCaption } from './lib/region-labels';
 import { buildRegionClouds } from './lib/clouds';
 import { buildRegionCallouts } from './lib/region-callouts';
 import type { PaperLabelMode } from './lib/region-labels';
@@ -73,12 +73,12 @@ export default function MapScene({ data, selectedId, onSelect, showCitations, sh
     // Links are context: both are intentionally faint compared with the paper dots.
     if (showSimilarities) {
       scatter.push({ type: 'scatter3d', mode: 'lines', ...lineArrays('similarity'),
-        line: { color: 'rgba(134,148,194,0.035)', width: 0.5 },
+        line: { color: 'rgba(134,148,194,0.26)', width: 2.0 },
         hoverinfo: 'skip', showlegend: false });
     }
     if (showCitations) {
       scatter.push({ type: 'scatter3d', mode: 'lines', ...lineArrays('citation'),
-        line: { color: 'rgba(255,189,121,0.07)', width: 0.65 },
+        line: { color: 'rgba(255,189,121,0.40)', width: 2.6 },
         hoverinfo: 'skip', showlegend: false });
     }
 
@@ -122,7 +122,7 @@ export default function MapScene({ data, selectedId, onSelect, showCitations, sh
       for (const callout of regionCallouts) {
         scatter.push({
           type: 'scatter3d', mode: 'lines', x: callout.x, y: callout.y, z: callout.z,
-          line: { color: palette(callout.cluster), width: 1.7 }, opacity: 0.85,
+          line: { color: palette(callout.cluster), width: 2.3 }, opacity: 0.96,
           hoverinfo: 'skip', showlegend: false,
         });
       }
@@ -144,7 +144,7 @@ export default function MapScene({ data, selectedId, onSelect, showCitations, sh
         const color = CLUSTER_COLORS[((c.cluster % CLUSTER_COLORS.length) + CLUSTER_COLORS.length) % CLUSTER_COLORS.length];
         return {
           x: c.label[0], y: c.label[1], z: c.label[2],
-          text: r?.keywords[0] || `Region ${c.cluster + 1}`,
+          text: r ? regionCaption(r) : `Topic ${c.cluster + 1}`,
           showarrow: false, captureevents: false,
           font: { size: 12, color, family: 'Inter, system-ui, sans-serif' },
           bgcolor: 'rgba(12,16,30,0.78)', bordercolor: color, borderwidth: 0, borderpad: 3,

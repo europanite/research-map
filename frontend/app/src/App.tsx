@@ -50,9 +50,9 @@ export default function App() {
   const [reweighting, setReweighting] = useState(false);
   const [error, setError] = useState('');
   const [showCitations, setShowCitations] = useState(true);
-  const [showSimilarities, setShowSimilarities] = useState(false);
+  const [showSimilarities, setShowSimilarities] = useState(true);
   const [showClouds, setShowClouds] = useState(true);
-  const [cloudOpacity, setCloudOpacity] = useState(0.12);
+  const [cloudOpacity, setCloudOpacity] = useState(0.08);
   const [pointScale, setPointScale] = useState(1.7);
   const [paperLabels, setPaperLabels] = useState<PaperLabelMode>('off');
   const [showRegionLabels, setShowRegionLabels] = useState(true);
@@ -140,7 +140,7 @@ export default function App() {
     finally { setLoading(false); setProgress(''); }
   };
   const weightChanged = map && Object.keys(weights).some(k => weights[k as keyof Weights] !== map.weights[k as keyof Weights]);
-  const canReweight = Boolean(map && (weightChanged || map.metrics.topic_clustering?.version !== 2) && !loading && !reweighting);
+  const canReweight = Boolean(map && (weightChanged || map.metrics.topic_clustering?.version !== 3) && !loading && !reweighting);
   const activePaperIds = new Set(map?.points.map(p => p.id) ?? []);
   const inboundCitations = selected && map ? map.edges.filter(e => e.kind === 'citation' && e.target === selected.id && activePaperIds.has(e.source)) : [];
   const outboundCitations = selected && map ? map.edges.filter(e => e.kind === 'citation' && e.source === selected.id && activePaperIds.has(e.target)) : [];
@@ -217,7 +217,8 @@ export default function App() {
                     onClick={() => setVisibleCluster(v => v === r.cluster ? null : r.cluster)}>
                     <span className="cluster-dot" style={{ background: CLUSTER_COLORS[((r.cluster % CLUSTER_COLORS.length) + CLUSTER_COLORS.length) % CLUSTER_COLORS.length] }}/>
                     <span className="region-caption-content">
-                      <strong>{r.cluster + 1}</strong>
+                      <strong>{regionCaption(r)}</strong>
+                      <small>{r.paperCount} papers</small>
                     </span>
                   </button>)}
                 </div>

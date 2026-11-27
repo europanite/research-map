@@ -168,33 +168,48 @@ export function silhouetteScores(sim: Matrix, n: number, labels: number[]): numb
 }
 
 function clusterGroups(sim: Matrix, n: number): { labels: number[]; silhouette: number | null } {
+  if (n < 4 || !hasSignal(sim, n)) return { labels: Array(n).fill(0), silhouette: null };
   const groups = Array.from({ length: n }, (_, i) => [i]);
   const toLabels = () => {
     const labels = Array(n).fill(0);
     [...groups].sort((a,b) => b.length-a.length || a[0]-b[0]).forEach((g,k) => g.forEach(i => { labels[i]=k; }));
     return labels;
   };
-  let bestLabels = Array(n).fill(0), bestObjective = 0.08, bestSilhouette: number | null = null;
-  // Inspect each cut of the hierarchy; do not force a fixed number of colored groups.
+  let bestLabels = Array(n).fill(0);
+  let bestObjective = 0.02;
+  let bestSilhouette: number | null = null;
+  let bestGroupCount = 1;
+  // A split requires positive evidence and at least two non-singleton groups.
   while (groups.length > 1) {
-    if (groups.length <= 7 && groups.length < n) {
+    if (groups.length <= 7 && groups.filter(g => g.length >= 2).length >= 2) {
       const labels = toLabels();
-      const scores = silhouetteScores(sim,n,labels);
-      const silhouette = scores.reduce((a,b) => a+b,0)/n;
+      const scores = silhouetteScores(sim, n, labels);
+      const silhouette = scores.reduce((a, b) => a + b, 0) / n;
       const singletonFraction = groups.filter(g => g.length === 1).length / n;
-      const objective = silhouette - 0.2 * singletonFraction - 0.01 * (groups.length-2);
-      if (objective > bestObjective) { bestObjective=objective; bestLabels=labels; bestSilhouette=silhouette; }
+      const tinyFraction = groups.filter(g => g.length <= 2).length / n;
+      const countPenalty = groups.length > 4 ? 0.015 * (groups.length - 4) : 0;
+      const objective = silhouette - 0.10 * singletonFraction - 0.04 * tinyFraction - countPenalty;
+      if (
+        objective > bestObjective + 1e-9 ||
+        (Math.abs(objective - bestObjective) <= 1e-9 && groups.length < bestGroupCount)
+      ) {
+        bestObjective = objective;
+        bestLabels = labels;
+        bestSilhouette = silhouette;
+        bestGroupCount = groups.length;
+      }
     }
-    let best = -Infinity, ga=0, gb=1;
-    for (let a=0; a<groups.length; a++) for (let b=a+1; b<groups.length; b++) {
-      let sum=0;
-      for (const i of groups[a]) for (const j of groups[b]) sum += sim[index(n,i,j)];
-      const score=sum/(groups[a].length*groups[b].length);
-      if (score>best+1e-12) { best=score; ga=a; gb=b; }
+    let best = -Infinity, ga = 0, gb = 1;
+    for (let a = 0; a < groups.length; a++) for (let b = a + 1; b < groups.length; b++) {
+      let sum = 0;
+      for (const i of groups[a]) for (const j of groups[b]) sum += sim[index(n, i, j)];
+      const score = sum / (groups[a].length * groups[b].length);
+      if (score > best + 1e-12) { best = score; ga = a; gb = b; }
     }
-    groups[ga]=groups[ga].concat(groups[gb]); groups.splice(gb,1);
+    groups[ga] = groups[ga].concat(groups[gb]);
+    groups.splice(gb, 1);
   }
-  return { labels:bestLabels, silhouette:bestSilhouette };
+  return { labels: bestLabels, silhouette: bestSilhouette };
 }
 
 export function buildMap(papers: PaperRecord[], weights: Weights): AnalysisResult {
@@ -224,7 +239,14 @@ export function buildMap(papers: PaperRecord[], weights: Weights): AnalysisResul
     }
   }
   const positions = hasSignal(combined, n) ? classicalMDS(combined, n) : Array.from({ length: n }, () => [0, 0, 0]);
-  const { labels, silhouette } = clusterGroups(combined, n);
+  // Domain names should follow textual evidence when the fused network is too sparse.
+  // The user-selected weights still control the MDS projection and edge strengths.
+  let grouping = clusterGroups(combined, n);
+  if (grouping.silhouette === null && active.abstract > 0 && available.abstract) {
+    grouping = clusterGroups(text, n);
+  }
+  const labels = grouping.labels;
+  const silhouette = grouping.silhouette === null ? null : silhouetteScores(combined,n,labels).reduce((a,b) => a+b,0)/n;
   const textSilhouette = silhouette === null ? null : silhouetteScores(text,n,labels).reduce((a,b) => a+b,0)/n;
   const points = papers.map((paper, i) => ({
     id: paper.id, x: Number(positions[i][0].toFixed(5)), y: Number(positions[i][1].toFixed(5)),
@@ -240,10 +262,11 @@ export function buildMap(papers: PaperRecord[], weights: Weights): AnalysisResul
   for (let i = 0; i < n; i++) {
     const nearest: Array<[number, number]> = [];
     for (let j = 0; j < n; j++) {
-      if (i !== j && combined[index(n, i, j)] >= 0.23) nearest.push([j, combined[index(n, i, j)]]);
+      if (i !== j && combined[index(n, i, j)] >= 0.015 && !citationUndirected.has(`${Math.min(i,j)}:${Math.max(i,j)}`)) nearest.push([j, combined[index(n, i, j)]]);
     }
     nearest.sort((a, b) => b[1] - a[1]);
-    for (const [j, score] of nearest.slice(0, 2)) {
+    // Keep only positive, reasonably strong local neighbors, not invented links.
+    for (const [j, score] of nearest.slice(0, 2).filter(([, score]) => score >= (nearest[0]?.[1] ?? 0) * 0.5)) {
       const a = Math.min(i, j), b = Math.max(i, j), key = `${a}:${b}`;
       if (!citationUndirected.has(key)) similar.set(key, [a, b, score]);
     }
@@ -252,7 +275,7 @@ export function buildMap(papers: PaperRecord[], weights: Weights): AnalysisResul
     edges.push({ source: papers[i].id, target: papers[j].id, kind: 'similarity', strength: Number(strength.toFixed(4)) });
   }
   return { points, edges, metrics: {
-    topic_clustering: { version: 2, groups: new Set(labels).size, silhouette, text_silhouette: textSilhouette },
+    topic_clustering: { version: 3, groups: new Set(labels).size, silhouette, text_silhouette: textSilhouette },
     papers: n, citation_links: structure.citationPairs.length,
     similarity_links: edges.filter(e => e.kind === 'similarity').length,
     unique_authors: new Set(papers.flatMap(p => p.author_ids)).size,

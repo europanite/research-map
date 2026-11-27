@@ -4,10 +4,17 @@
 [![CI](https://github.com/europanite/research-map/actions/workflows/ci.yml/badge.svg)](https://github.com/europanite/research-map/actions/workflows/ci.yml)
 [![pages](https://github.com/europanite/research-map/actions/workflows/pages.yml/badge.svg)](https://github.com/europanite/research-map/actions/workflows/pages.yml)
 
-Search a scientific topic in **OpenAlex**, combine **title/abstract similarity, coauthors, and citation structure**, and explore the result as an interactive **3D map**. 
-## Start locally
+!["web_ui"](./assets/images/web_ui.png)
+
+ [PlayGround](https://europanite.github.io/research-map/)
+
+Search research papers and build a 3D map.
+
+## Quick Start
 
 Requirements: Docker Engine + Docker Compose plugin (or Node 22+ to run Vite). The frontend performs **HTTPS `fetch` calls to `https://api.openalex.org/works` directly from the browser**.
+
+### Node 
 
 ```bash
 cd research-map
@@ -22,6 +29,59 @@ cd frontend/app
 npm ci
 npm run dev
 # http://localhost:5173
+```
+
+### Docker Compose 
+
+```bash
+# Start the browser-only development frontend (http://localhost:5173)
+docker compose up -d --build frontend
+
+# Follow frontend logs
+docker compose logs -f frontend
+
+# Stop development containers (preserves named volumes)
+docker compose down
+```
+
+To run both test suites in sequence:
+
+```bash
+bash scripts/test.sh
+```
+
+## Tests
+
+### Node
+
+```bash
+# Unit tests run offline with Node 22+; no OpenAlex requests:
+cd frontend/app
+npm run test:unit
+
+# Full frontend build (requires npm dependencies):
+npm ci
+npm run build
+
+# Docker: Python API tests + TypeScript offline unit tests + frontend build:
+cd ../..
+./scripts/test.sh
+```
+
+```bash
+cd frontend/app
+npm ci
+VITE_BASE_PATH=/research-map/ npm run build
+```
+
+### Docker Compose 
+
+```bash
+# Frontend unit tests build
+docker compose -f docker-compose.test.yml run --rm --build frontend_build
+
+# Backend tests (isolated SQLite test database)
+docker compose -f docker-compose.test.yml run --rm --build backend_test
 ```
 
 An OpenAlex API key is **optional** for initial testing, but strongly recommended for extended queries and higher quotas. Enter **your own key** in the collapsible **OpenAlex API key (optional)** field in the app. It is kept in page memory only, is **not written to IndexedDB, localStorage, `.env`, or the backend**, and is sent **directly to OpenAlex in the request URL query string**. As with other URL-based API credentials, it is visible to the browser's network inspector, the OpenAlex provider, and any logging on the request path. **Never commit or hard-code a shared/private paid API key in the frontend**. A paid platform with a shared provider key must use a protected backend proxy.
@@ -46,43 +106,6 @@ An OpenAlex API key is **optional** for initial testing, but strongly recommende
 Each positive similarity channel is normalized by its 90th percentile. Zero-availability channels are excluded from effective weights, scores are fused by the chosen weights, and distances are projected into 3D using **classical MDS (symmetric Jacobi eigendecomposition)**. Average-linkage grouping produces up to seven clusters; nearest similarity links and direct citation edges are rendered separately. Calculations run in a **Web Worker** so the React interface remains responsive.
 
 **Interpretation:** proximity and clusters are exploratory patterns, **not causal influence, actual historical lineage, or scientifically validated relevance**. A sample of 20–120 papers and sparse citation metadata can distort distances. Abstracts and author identities are only as accurate as OpenAlex's source data.
-
-```bash
-docker compose down    # stop legacy containers; preserves DB volume
-docker compose up -d --build frontend
-```
-
-
-## Tests
-
-The frontend Dockerfiles live in `frontend/`; their build context is `frontend/app/`. Commit `frontend/app/package.json` and `frontend/app/package-lock.json`. If a lockfile has not yet been created, run `npm install --package-lock-only` from `frontend/app/` first.
-
-```bash
-# Unit tests run offline with Node 22+; no OpenAlex requests:
-cd frontend/app
-npm run test:unit
-
-# Full frontend build (requires npm dependencies):
-npm ci
-npm run build
-
-# Docker: Python API tests + TypeScript offline unit tests + frontend build:
-cd ../..
-./scripts/test.sh
-```
-
-`frontend/app/tests/local-analysis.test.mjs` mocks the OpenAlex response, tests pagination/IDs/abstract reconstruction/quota errors, reference edges, deterministic/reweighted coordinates, and 120-paper finite 3D geometry. The optional backend's pre-existing test suite remains unchanged. GitHub Actions runs both test sets and a frontend build.
-
-## Static deploy / GitHub Pages
-
-Only publish the contents of `frontend/app/dist`; no server-side container is needed. For subpath sites like `https://user.github.io/research-map/`, set the Vite base path at build time:
-
-```bash
-cd frontend/app
-npm ci
-VITE_BASE_PATH=/research-map/ npm run build
-# Publish dist/ via GitHub Pages or another static host.
-```
 
 ## Provider quotas and limitations
 

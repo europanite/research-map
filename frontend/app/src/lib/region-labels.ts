@@ -8,6 +8,7 @@ import { technicalTerms } from './technical-terms.ts';
 export interface RegionLabel {
   cluster: number;
   keywords: string[];
+  label: string;
   x: number;
   y: number;
   z: number;
@@ -16,7 +17,34 @@ export interface RegionLabel {
 
 function terms(source: string): Set<string> { return new Set(technicalTerms(source).keys()); }
 
-interface Candidate { term: string; score: number }
+interface Candidate { term: string; score: number; count: number }
+
+const ACRONYMS = new Set(['ai', 'xai', 'llm', 'nlp', 'cnn', 'rnn', 'gnn', 'gan', 'vit', 'bert', 'gpt', 'svm']);
+
+function distinctTerms(values: string[]): string[] {
+  const out: string[] = [];
+  const seen = new Set<string>();
+  for (const value of values.map(v => v.trim()).filter(Boolean)) {
+    const key = value.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(value);
+  }
+  return out;
+}
+
+function formatLabelTerm(term: string): string {
+  return term.split(/\s+/).map(token => {
+    const lower = token.toLowerCase();
+    if (ACRONYMS.has(lower)) return lower.toUpperCase();
+    return lower.charAt(0).toUpperCase() + lower.slice(1);
+  }).join(' ');
+}
+
+function buildHumanLabel(keywords: string[], cluster: number): string {
+  const chosen = distinctTerms(keywords).map(formatLabelTerm).slice(0, 2);
+  return chosen.length ? chosen.join(' · ') : `Group ${cluster + 1} (keywords unavailable)`;
+}
 
 /** Works on maps previously saved in IndexedDB or exported as JSON. */
 export function buildRegionLabels(points: MapPoint[]): RegionLabel[] {
@@ -29,7 +57,7 @@ export function buildRegionLabels(points: MapPoint[]): RegionLabel[] {
 
   for (const [cluster, papers] of groups) {
     const df = new Map<string, number>(), titleDf = new Map<string, number>();
-    for (const {paper} of papers) {
+    for (const { paper } of papers) {
       const titleTerms = terms(paper.title || '');
       const docTerms = new Set([...titleTerms, ...terms((paper.abstract || '').slice(0, 7000))]);
       for (const term of docTerms) {
@@ -48,24 +76,28 @@ export function buildRegionLabels(points: MapPoint[]): RegionLabel[] {
     const inside = papers.length, outside = size - inside;
     const minCount = Math.max(2, Math.ceil(inside * 0.20));
     const candidates: Candidate[] = [];
-    for (const [term, count] of groupDf.get(cluster)!) {
+    const df = groupDf.get(cluster)!;
+    const titleDf = groupTitleDf.get(cluster)!;
+    for (const [term, count] of df) {
       if (count < minCount) continue;
       const otherCount = (globalDf.get(term) ?? 0) - count;
       const inRate = count / inside;
       const outRate = outside ? otherCount / outside : 0;
-      // Refuse generic, shared, or unsupported terms, even if a group has no alternative.
-      if (!outside || count < minCount || inRate - outRate < 0.15 || inRate < 2 * outRate) continue;
-      if ((globalDf.get(term) ?? 0) / size >= 0.75) continue;
-      const titleCount = groupTitleDf.get(cluster)?.get(term) ?? 0;
+      if (outside && (inRate - outRate < 0.15 || inRate < 2 * outRate)) continue;
+      if (outside && (globalDf.get(term) ?? 0) / size >= 0.75) continue;
+      const titleCount = titleDf.get(term) ?? 0;
       const phrase = term.includes(' ');
+      // In a single region, use a repeated title phrase as a corpus descriptor,
+      // not a purported contrastive keyword or a single-paper title.
+      if (!outside && (!phrase || titleCount < 2)) continue;
       if (!titleCount && (!phrase || inRate < 0.5)) continue;
-      const contrast = Math.log((inRate + 0.05) / (outRate + 0.05));
+      const contrast = outside ? Math.log((inRate + 0.05) / (outRate + 0.05)) : 1;
       const specificity = count / Math.max(1, globalDf.get(term) ?? 1);
       const phraseBonus = phrase ? (term.split(' ').length === 2 ? 2.5 : 2.1) : 0.8;
       const score = inRate * contrast * specificity * (1 + titleCount / inside) * phraseBonus;
-      candidates.push({term, score});
+      candidates.push({ term, score, count });
     }
-    candidates.sort((a, b) => b.score - a.score || a.term.localeCompare(b.term));
+    candidates.sort((a, b) => b.score - a.score || b.count - a.count || a.term.localeCompare(b.term));
     ranking.set(cluster, candidates);
   }
 
@@ -78,7 +110,7 @@ export function buildRegionLabels(points: MapPoint[]): RegionLabel[] {
   for (let pass = 0; pass < 2; pass++) {
     for (const cluster of order) {
       const own = chosen.get(cluster)!;
-      const candidate = (ranking.get(cluster) ?? []).find(({term}) => {
+      const candidate = (ranking.get(cluster) ?? []).find(({ term }) => {
         if (used.has(term)) return false;
         const fragments = term.split(' ');
         return !own.some(previous => previous.split(' ').some(fragment => fragments.includes(fragment)));
@@ -87,15 +119,18 @@ export function buildRegionLabels(points: MapPoint[]): RegionLabel[] {
     }
   }
 
-  return [...groups.entries()].sort(([a], [b]) => a - b).map(([cluster, papers]) => ({
-    cluster,
-    keywords: chosen.get(cluster) ?? [],
-    x: papers.reduce((s, p) => s + p.x, 0) / papers.length,
-    y: papers.reduce((s, p) => s + p.y, 0) / papers.length,
-    // Small lift avoids covering central paper markers.
-    z: papers.reduce((s, p) => s + p.z, 0) / papers.length + 0.27,
-    paperCount: papers.length,
-  }));
+  return [...groups.entries()].sort(([a], [b]) => a - b).map(([cluster, papers]) => {
+    const keywords = distinctTerms(chosen.get(cluster) ?? []).slice(0, 2);
+    return {
+      cluster,
+      keywords,
+      label: buildHumanLabel(keywords, cluster),
+      x: papers.reduce((s, p) => s + p.x, 0) / papers.length,
+      y: papers.reduce((s, p) => s + p.y, 0) / papers.length,
+      z: papers.reduce((s, p) => s + p.z, 0) / papers.length + 0.27,
+      paperCount: papers.length,
+    };
+  });
 }
 
 export type PaperLabelMode = 'off' | 'key' | 'all';
@@ -117,7 +152,8 @@ export function choosePaperLabelIds(points: MapPoint[], mode: PaperLabelMode, se
 }
 
 /** Human-readable, group-specific caption used consistently across the map UI. */
-export function regionCaption(region: Pick<RegionLabel, 'cluster' | 'keywords'>): string {
-  const chosen = [...new Set((region.keywords ?? []).map(x => x.trim()).filter(Boolean))].slice(0, 2);
-  return chosen.length ? chosen.join(' · ') : `Group ${region.cluster + 1} (keywords unavailable)`;
+export function regionCaption(region: Pick<RegionLabel, 'cluster' | 'keywords'> & Partial<Pick<RegionLabel, 'label'>>): string {
+  const chosen = distinctTerms(region.keywords ?? []).slice(0, 2);
+  if (!chosen.length) return `Group ${region.cluster + 1} (keywords unavailable)`;
+  return region.label?.trim() || chosen.join(' · ');
 }
