@@ -12,7 +12,11 @@ Search research papers and build a 3D map.
 
 ## Quick Start
 
-Requirements: Docker Engine + Docker Compose plugin (or Node 22+ to run Vite). The frontend performs **HTTPS `fetch` calls to `https://api.openalex.org/works` directly from the browser**.
+Requirements: 
+- Docker Compose plugin 
+- or Node 22+. 
+
+The frontend performs **HTTPS `fetch` calls to `https://api.openalex.org/works` directly from the browser**.
 
 ### Node 
 
